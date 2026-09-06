@@ -302,16 +302,22 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       }
     }
     
-    fetchLocalized()
+    let cancelled = false
+    // Debounce: only fetch localized data if user stays on card for 1s
+    const timer = setTimeout(() => { if (!cancelled) fetchLocalized() }, 1000)
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [card, lang])
 
   useEffect(() => {
     if (!card) return
     let mounted = true
-    const fetchPrints = async () => {
+    // Debounce: only fetch prints if the user stays on this card for 1.5s
+    const timer = setTimeout(async () => {
+      if (!mounted) return
       setFetchingPrints(true)
       try {
         const res = await fetch(`https://api.scryfall.com/cards/search?q=oracle_id:${card.oracle_id}&unique=prints`)
+        if (res.status === 429) { if (mounted) setFetchingPrints(false); return }
         if (res.ok) {
           const data = await res.json()
           if (mounted) setPrints(data.data || [])
@@ -321,9 +327,8 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       } finally {
         if (mounted) setFetchingPrints(false)
       }
-    }
-    fetchPrints()
-    return () => mounted = false
+    }, 1500)
+    return () => { mounted = false; clearTimeout(timer) }
   }, [card?.oracle_id])
 
   useEffect(() => {
@@ -571,8 +576,9 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
         if (isActive) setFetchingSimilar(false)
       }
     }
-    fetchSimilar()
-    return () => { isActive = false }
+    // Debounce: only fetch EDHREC if the user stays on this card for 2s
+    const timer = setTimeout(() => { fetchSimilar() }, 2000)
+    return () => { isActive = false; clearTimeout(timer) }
   }, [card?.name])
 
   useEffect(() => {

@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Nexus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+        }
+
+        h1,
+        h2,
+        h3,
+        .mtg-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .glass-panel {
+            background: rgba(21, 24, 30, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .mtg-symbol {
+            display: inline-block;
+            height: 1.2em;
+            vertical-align: middle;
+            margin: 0 0.1em;
+            filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.8));
+        }
+
+        /* Hide scrollbar for horizontal lists */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Smooth inputs */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+
+    <header class="bg-[#111318]/95 backdrop-blur-md border-b border-gray-800/80 sticky top-0 z-50 shadow-2xl">
+        <div
+            class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-center md:justify-start items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-700 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                    <i class="fa-solid fa-hat-wizard text-2xl text-white"></i>
+                </div>
+                <h1
+                    class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-orange-400 tracking-wider mtg-font">
+                    MTG NEXUS</h1>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto p-4 flex flex-col lg:flex-row gap-8 flex-grow items-start mt-4">
+
+        <aside class="w-full lg:w-[320px] xl:w-[360px] glass-panel rounded-2xl p-6 sticky top-24 shrink-0">
+
+            <!-- ACCIONES PRINCIPALES -->
+            <div class="mb-8 flex flex-col gap-3">
+                <button id="btn-random"
+                    class="w-full bg-gradient-to-b from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-4 px-8 rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(245,158,11,0.5)] active:translate-y-0 active:scale-95 flex items-center justify-center group border border-orange-400/50 text-lg">
+                    <i class="fa-solid fa-bolt mr-3 group-hover:animate-pulse"></i>
+                    <span data-i18n="invoke" class="tracking-wide">Invocar Carta</span>
+                </button>
+
+                <div
+                    class="flex items-center justify-center bg-black/40 px-4 py-3 rounded-xl border border-gray-700/50 shadow-inner w-full">
+                    <i class="fa-solid fa-layer-group text-amber-500 mr-3 text-lg"></i>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider leading-none mb-1.5"
+                            data-i18n="bufferState">Buffer Listo</span>
+                        <div class="flex gap-1.5 items-center" id="buffer-indicators">
+                            <!-- JS will fill this with dots -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700/60 pb-4">
+                <h2 class="text-xl font-bold text-amber-500 flex items-center"><i class="fa-solid fa-sliders mr-3"></i>
+                    <span data-i18n="searchParams">Filtros</span></h2>
+                <button id="btn-reset"
+                    class="text-sm text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors border border-gray-700"
+                    title="Limpiar"><i class="fa-solid fa-rotate-right mr-1"></i> Reset</button>
+            </div>
+
+            <!-- Texto Libre y Ámbitos de Búsqueda -->
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
+                    data-i18n="searchString">Búsqueda Libre</label>
+                <div class="relative group mb-2.5">
+                    <input type="text" id="filter-text" placeholder="Ej: Proliferate, Goblin..."
+                        data-i18n-placeholder="searchPlaceholder"
+                        class="w-full bg-gray-900/80 text-white rounded-xl p-3 pl-10 border border-gray-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all text-sm placeholder-gray-600 shadow-inner group-hover:border-gray-500">
+                    <i
+                        class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-gray-500 group-hover:text-amber-500 transition-colors"></i>
+                </div>
+                <!-- Opciones de Dónde Buscar -->
+                <div class="flex gap-2">
+                    <label class="cursor-pointer relative group flex-1">
+                        <input type="checkbox" id="search-name" value="name" class="search-scope peer hidden" checked>
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-1 text-center text-[10px] sm:text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-medium">
+                            <span data-i18n="scopeName">Nombre</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group flex-1">
+                        <input type="checkbox" id="search-type" value="type" class="search-scope peer hidden" checked>
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-1 text-center text-[10px] sm:text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-medium">
+                            <span data-i18n="scopeType">Tipo</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group flex-1">
+                        <input type="checkbox" id="search-text" value="text" class="search-scope peer hidden" checked>
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-1 text-center text-[10px] sm:text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-medium">
+                            <span data-i18n="scopeText">Texto</span></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Idiomas -->
+            <div class="mb-6 bg-black/20 p-4 rounded-xl border border-gray-800 shadow-inner">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5"
+                            data-i18n="uiLang">Texto Interfaz</label>
+                        <div class="relative">
+                            <select id="lang-ui"
+                                class="w-full bg-gray-900 text-gray-200 rounded-lg p-2 text-sm border border-gray-700 focus:border-amber-500 outline-none appearance-none cursor-pointer">
+                                <option value="es">Español</option>
+                                <option value="en">English</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-gray-500 pointer-events-none text-xs"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5"
+                            data-i18n="imgLang">Arte / Imagen</label>
+                        <div class="relative">
+                            <select id="lang-img"
+                                class="w-full bg-gray-900 text-gray-200 rounded-lg p-2 text-sm border border-gray-700 focus:border-amber-500 outline-none appearance-none cursor-pointer">
+                                <option value="en">English</option>
+                                <option value="es">Español</option>
+                                <option value="ja">日本語</option>
+                                <option value="ph">Phyrexian</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-gray-500 pointer-events-none text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comandante -->
+            <div class="mb-6">
+                <label class="cursor-pointer relative flex items-center group w-full">
+                    <input type="checkbox" id="filter-commander" class="peer hidden">
+                    <div
+                        class="w-full bg-gray-900/60 border border-gray-700 rounded-xl p-3.5 transition-all duration-200 group-hover:border-amber-500/50 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 flex justify-between items-center shadow-sm">
+                        <span class="text-sm font-bold text-gray-400 peer-checked:text-amber-400 transition-colors"
+                            data-i18n="commander">Puede ser Comandante</span>
+                        <i
+                            class="fa-solid fa-crown text-gray-600 peer-checked:text-amber-500 text-lg transition-colors drop-shadow-md"></i>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Colores (Generados por JS con SVGs) -->
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3"
+                    data-i18n="colorId">Identidad de Color</label>
+                <div class="flex gap-2 justify-between" id="color-filters-container">
+                    <!-- Checkboxes generados dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Tipos (Botones estilizados) -->
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3"
+                    data-i18n="mainType">Tipo de Carta</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer relative group"><input type="checkbox" value="creature"
+                            class="filter-type peer hidden">
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 px-1 text-center text-sm text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-medium">
+                            <span data-i18n="creature">Criatura</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group"><input type="checkbox" value="instant"
+                            class="filter-type peer hidden">
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 px-1 text-center text-sm text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-blue-500 peer-checked:bg-blue-500/10 peer-checked:text-blue-400 font-medium">
+                            <span data-i18n="instant">Instantáneo</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group"><input type="checkbox" value="sorcery"
+                            class="filter-type peer hidden">
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 px-1 text-center text-sm text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-red-500 peer-checked:bg-red-500/10 peer-checked:text-red-400 font-medium">
+                            <span data-i18n="sorcery">Conjuro</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group"><input type="checkbox" value="artifact"
+                            class="filter-type peer hidden">
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 px-1 text-center text-sm text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-gray-300 peer-checked:bg-gray-300/10 peer-checked:text-gray-200 font-medium">
+                            <span data-i18n="artifact">Artefacto</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group"><input type="checkbox" value="enchantment"
+                            class="filter-type peer hidden">
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 px-1 text-center text-sm text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-400 font-medium">
+                            <span data-i18n="enchantment">Encantamiento</span></div>
+                    </label>
+                    <label class="cursor-pointer relative group"><input type="checkbox" value="planeswalker"
+                            class="filter-type peer hidden">
+                        <div
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2 px-1 text-center text-sm text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-purple-500 peer-checked:bg-purple-500/10 peer-checked:text-purple-400 font-medium">
+                            <span data-i18n="planeswalker">Planeswalker</span></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5 mb-2">
+                <!-- Rareza -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3"
+                        data-i18n="rarity">Rareza</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="cursor-pointer relative group"><input type="checkbox" value="common"
+                                class="filter-rarity peer hidden">
+                            <div
+                                class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-2 text-center text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-gray-400 peer-checked:bg-gray-400/20 peer-checked:text-white">
+                                <span data-i18n="common">Común</span></div>
+                        </label>
+                        <label class="cursor-pointer relative group"><input type="checkbox" value="uncommon"
+                                class="filter-rarity peer hidden">
+                            <div
+                                class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-2 text-center text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-blue-400 peer-checked:bg-blue-400/20 peer-checked:text-blue-300">
+                                <span data-i18n="uncommon">Infrecuente</span></div>
+                        </label>
+                        <label class="cursor-pointer relative group"><input type="checkbox" value="rare"
+                                class="filter-rarity peer hidden">
+                            <div
+                                class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-2 text-center text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-amber-400 peer-checked:bg-amber-400/20 peer-checked:text-amber-300">
+                                <span data-i18n="rare">Rara</span></div>
+                        </label>
+                        <label class="cursor-pointer relative group"><input type="checkbox" value="mythic"
+                                class="filter-rarity peer hidden">
+                            <div
+                                class="w-full bg-gray-900 border border-gray-700 rounded-lg py-1.5 px-2 text-center text-xs text-gray-400 transition-all group-hover:bg-gray-800 peer-checked:border-orange-500 peer-checked:bg-orange-500/20 peer-checked:text-orange-400">
+                                <span data-i18n="mythic">Mítica</span></div>
+                        </label>
+                    </div>
+                </div>
+                <!-- Formato y CMC -->
+                <div class="flex flex-col gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"
+                            data-i18n="format">Formato</label>
+                        <div class="relative">
+                            <select id="filter-format"
+                                class="w-full bg-gray-900 text-gray-200 rounded-lg p-2.5 text-sm border border-gray-700 focus:border-amber-500 outline-none appearance-none shadow-inner">
+                                <option value="" data-i18n="anyFormat">Todos</option>
+                                <option value="standard">Standard</option>
+                                <option value="pioneer">Pioneer</option>
+                                <option value="modern">Modern</option>
+                                <option value="commander">Commander</option>
+                                <option value="pauper">Pauper</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-gray-500 pointer-events-none text-xs"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Maná
+                            (CMC)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" id="cmc-min" placeholder="Min" min="0"
+                                class="w-1/2 bg-gray-900 rounded-lg p-2 text-center text-sm border border-gray-700 outline-none focus:border-amber-500 shadow-inner text-white placeholder-gray-600">
+                            <span class="text-gray-500">-</span>
+                            <input type="number" id="cmc-max" placeholder="Max" min="0"
+                                class="w-1/2 bg-gray-900 rounded-lg p-2 text-center text-sm border border-gray-700 outline-none focus:border-amber-500 shadow-inner text-white placeholder-gray-600">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="w-full lg:w-[calc(100%-340px)] xl:w-[calc(100%-380px)] flex flex-col gap-6">
+
+            <!-- Mensajes de Estado -->
+            <div id="welcome-message"
+                class="glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[500px]">
+                <div class="relative mb-8">
+                    <div class="absolute inset-0 bg-amber-500 blur-[40px] opacity-20 rounded-full"></div>
+                    <i
+                        class="fa-brands fa-wizards-of-the-coast text-7xl text-amber-500/80 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] relative z-10"></i>
+                </div>
+                <h2 class="text-4xl mtg-font text-white mb-4 tracking-wide font-bold" data-i18n="welcomeTitle">
+                    Bienvenido al Nexo</h2>
+                <p class="text-gray-400 text-lg max-w-md leading-relaxed" data-i18n="welcomeDesc">Configura tus filtros
+                    en el panel lateral y presiona "Invocar Carta" para explorar el multiverso.</p>
+                <div id="symbology-loading"
+                    class="mt-8 text-sm font-semibold text-amber-500/80 animate-pulse bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20">
+                    <i class="fa-solid fa-book-journal-whills mr-2"></i> Descifrando tomos de simbología...</div>
+            </div>
+
+            <div id="loading-message"
+                class="hidden glass-panel rounded-2xl p-10 text-center min-h-[500px] flex flex-col items-center justify-center">
+                <i
+                    class="fa-solid fa-compass fa-spin text-6xl text-amber-500 mb-6 drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]"></i>
+                <p class="text-2xl text-white mtg-font tracking-wider" data-i18n="loading">Scrying el multiverso...</p>
+                <p class="text-gray-500 mt-2">Buscando las mejores coincidencias</p>
+            </div>
+
+            <div id="error-message"
+                class="hidden bg-red-900/30 border border-red-700/50 rounded-2xl p-10 text-center min-h-[300px] flex flex-col items-center justify-center backdrop-blur-md">
+                <i
+                    class="fa-solid fa-triangle-exclamation text-5xl text-red-500 mb-4 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]"></i>
+                <h3 class="text-2xl text-white font-bold mb-2">Vacío Astral</h3>
+                <p class="text-gray-300" data-i18n="error">El multiverso está vacío. No se encontraron cartas con esta
+                    combinación de filtros.</p>
+            </div>
+
+            <!-- Contenedor de la Carta (Oculto por defecto) -->
+            <div id="card-container"
+                class="hidden glass-panel rounded-3xl overflow-hidden flex flex-col xl:flex-row relative border-t border-l border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+
+                <!-- Columna Izquierda: Imagen y Links -->
+                <div
+                    class="p-8 xl:w-[45%] flex flex-col items-center relative bg-gradient-to-b from-black/40 to-black/10 border-r border-gray-800/50">
+                    <div class="relative group perspective-1000 w-full max-w-[340px]">
+                        <img id="card-image" src="" alt="Card"
+                            class="w-full rounded-[4.75%] shadow-[0_15px_35px_rgba(0,0,0,0.6)] transition-all duration-500 group-hover:scale-[1.03] group-hover:shadow-[0_20px_40px_rgba(245,158,11,0.2)] border border-white/5">
+
+                        <!-- Botón Voltear (Solo para MDFC) -->
+                        <button id="btn-flip"
+                            class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl hover:bg-amber-600 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.9)] border-2 border-gray-500 hover:border-amber-400 z-10 hover:scale-110">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+
+                    <!-- Enlaces Externos Premium -->
+                    <div class="flex gap-4 mt-8 w-full max-w-[340px]">
+                        <a id="link-scryfall" href="#" target="_blank"
+                            class="flex-1 bg-gray-800/80 hover:bg-gray-700 text-center py-2.5 rounded-xl text-sm font-semibold text-gray-200 transition-all border border-gray-600 hover:border-gray-400 shadow-md flex items-center justify-center group">
+                            <i
+                                class="fa-solid fa-arrow-up-right-from-square mr-2 text-gray-400 group-hover:text-white transition-colors"></i>
+                            Scryfall
+                        </a>
+                        <a id="link-edhrec" href="#" target="_blank"
+                            class="flex-1 bg-indigo-900/80 hover:bg-indigo-800 text-center py-2.5 rounded-xl text-sm font-semibold text-indigo-100 transition-all border border-indigo-700/50 hover:border-indigo-400 shadow-md flex items-center justify-center group">
+                            <i
+                                class="fa-solid fa-chart-line mr-2 text-indigo-300 group-hover:text-white transition-colors"></i>
+                            EDHREC
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Detalles de la carta -->
+                <div class="p-8 xl:w-[55%] flex flex-col bg-black/20">
+                    <div class="flex justify-between items-start border-b border-gray-700/80 pb-5 mb-5">
+                        <div class="pr-4">
+                            <h2 id="card-name"
+                                class="text-3xl font-bold text-white mtg-font tracking-wide drop-shadow-md"></h2>
+                            <p id="card-type" class="text-lg text-amber-500/90 italic mt-1 font-serif"></p>
+                        </div>
+                        <div id="card-mana"
+                            class="flex items-center gap-1 shrink-0 bg-black/40 px-3 py-1.5 rounded-full border border-gray-700/50 shadow-inner">
+                        </div>
+                    </div>
+
+                    <div class="flex-grow flex flex-col justify-center">
+                        <!-- Caja de Texto Principal -->
+                        <div
+                            class="bg-gray-900/60 p-6 rounded-2xl border border-gray-700/50 mb-5 shadow-inner relative backdrop-blur-sm">
+                            <!-- Indicador de traducción al vuelo -->
+                            <div id="translation-badge"
+                                class="hidden absolute -top-3 right-5 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[10px] px-3 py-1 rounded-full uppercase font-bold tracking-widest shadow-lg border border-orange-400/50 flex items-center">
+                                <i class="fa-solid fa-language mr-1.5"></i> Traducido</div>
+
+                            <div id="card-oracle-text"
+                                class="text-gray-200 text-lg whitespace-pre-wrap leading-relaxed font-serif"></div>
+                            <div id="card-flavor-text"
+                                class="text-gray-400/80 italic mt-5 text-sm border-t border-gray-700/50 pt-4 hidden mtg-font">
+                            </div>
+                        </div>
+
+                        <!-- Artista y Stats -->
+                        <div class="flex justify-between items-end mb-6 px-2">
+                            <div class="text-sm text-gray-500 flex items-center">
+                                <i class="fa-solid fa-palette mr-2 text-gray-600"></i> <span id="card-artist"
+                                    class="font-medium"></span>
+                            </div>
+                            <div id="card-stats-container" class="hidden">
+                                <div id="card-stats"
+                                    class="bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-600 text-white font-bold py-2 px-5 rounded-xl text-xl shadow-xl flex items-center justify-center min-w-[80px]">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos Extra Footer -->
+                    <div
+                        class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm border-t border-gray-700/80 pt-6 bg-black/30 -mx-8 -mb-8 p-8 rounded-br-3xl mt-auto">
+                        <div>
+                            <p class="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Set</p>
+                            <p id="card-set"
+                                class="uppercase text-white bg-gray-800/80 px-2.5 py-1 rounded-md inline-block font-mono text-xs border border-gray-600">
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1"
+                                data-i18n="rarity">Rareza</p>
+                            <p id="card-rarity" class="capitalize font-bold text-base drop-shadow-md"></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Mercado (USD)
+                            </p>
+                            <p id="price-usd" class="text-emerald-400 font-mono font-semibold text-base"></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Mercado (EUR)
+                            </p>
+                            <p id="price-eur" class="text-blue-400 font-mono font-semibold text-base"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="prints-section" class="hidden glass-panel rounded-2xl p-6 mt-2">
+                <h3 class="text-lg font-bold text-gray-200 mb-5 flex items-center border-b border-gray-700/60 pb-3">
+                    <i class="fa-solid fa-layer-group text-amber-500 mr-3"></i>
+                    <span data-i18n="otherVersions">Estilos y Versiones Alternativas</span>
+                </h3>
+                <div class="relative group">
+                    <!-- Flecha indicadora de scroll -->
+                    <div
+                        class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#15181e] to-transparent pointer-events-none z-10 hidden md:block">
+                    </div>
+
+                    <div id="prints-container" class="flex gap-5 overflow-x-auto no-scrollbar py-4 items-end px-2">
+                        <!-- JS inserta las imagenes aquí -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN Y ESTADO GLOBAL ---
+        const STATE = {
+            currentCardData: null,
+            translatedData: null, // Traducción al vuelo
+            isFlipped: false,
+            buffer: [],
+            isFetchingBuffer: false,
+            activeQuery: "",
+            symbology: {},
+            symbologyReady: false
+        };
+
+        const MAX_BUFFER = 5;
+
+        // DICCIONARIOS DE IDIOMA PARA UI
+        const TRANSLATIONS = {
+            es: {
+                searchParams: "Filtros", searchString: "Búsqueda Libre", searchPlaceholder: "Ej: Proliferate, Dragon...",
+                scopeName: "Nombre", scopeType: "Tipo", scopeText: "Texto",
+                uiLang: "Texto Interfaz", imgLang: "Arte / Imagen", commander: "Puede ser Comandante",
+                colorId: "Identidad de Color", mainType: "Tipo de Carta", rarity: "Rareza", format: "Formato Legal",
+                creature: "Criatura", instant: "Instantáneo", sorcery: "Conjuro", artifact: "Artefacto",
+                enchantment: "Encantamiento", planeswalker: "Planeswalker", anyFormat: "Todos",
+                common: "Común", uncommon: "Infrecuente", rare: "Rara", mythic: "Mítica",
+                bufferState: "Buffer Listo", invoke: "Invocar Carta",
+                welcomeTitle: "Bienvenido al Nexo", welcomeDesc: 'Configura tus filtros en el panel lateral y presiona "Invocar Carta" para explorar el multiverso.',
+                loading: "Scrying el multiverso...", error: "El multiverso está vacío. Prueba otros filtros.",
+                otherVersions: "Estilos y Versiones Alternativas"
+            },
+            en: {
+                searchParams: "Filters", searchString: "Free Search", searchPlaceholder: "E.g: Proliferate, Dragon...",
+                scopeName: "Name", scopeType: "Type", scopeText: "Text",
+                uiLang: "UI Text", imgLang: "Art / Image", commander: "Can be Commander",
+                colorId: "Color Identity", mainType: "Card Type", rarity: "Rarity", format: "Legal Format",
+                creature: "Creature", instant: "Instant", sorcery: "Sorcery", artifact: "Artifact",
+                enchantment: "Enchantment", planeswalker: "Planeswalker", anyFormat: "Any",
+                common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
+                bufferState: "Buffer Ready", invoke: "Summon Card",
+                welcomeTitle: "Welcome to the Nexus", welcomeDesc: 'Configure your filters in the side panel and press "Summon Card" to explore the multiverse.',
+                loading: "Scrying the multiverse...", error: "The multiverse is empty. Try other filters.",
+                otherVersions: "Alternative Styles & Versions"
+            }
+        };
+
+        // REFERENCIAS DOM
+        const DOM = {
+            btnRandom: document.getElementById('btn-random'), btnReset: document.getElementById('btn-reset'),
+            btnFlip: document.getElementById('btn-flip'), bufferInd: document.getElementById('buffer-indicators'),
+            langUI: document.getElementById('lang-ui'), langImg: document.getElementById('lang-img'),
+            views: {
+                welcome: document.getElementById('welcome-message'), loading: document.getElementById('loading-message'),
+                error: document.getElementById('error-message'), card: document.getElementById('card-container'), prints: document.getElementById('prints-section')
+            },
+            colorContainer: document.getElementById('color-filters-container'), printsContainer: document.getElementById('prints-container')
+        };
+
+        // --- 2. INICIALIZACIÓN (SYMBOLOGY) ---
+        async function fetchSymbology() {
+            try {
+                const res = await fetch('https://api.scryfall.com/symbology', {
+                    headers: { 'Accept': 'application/json;q=0.9,*/*;q=0.8' }
+                });
+                const data = await res.json();
+                data.data.forEach(sym => { STATE.symbology[sym.symbol] = sym.svg_uri; });
+                STATE.symbologyReady = true;
+                document.getElementById('symbology-loading').classList.add('hidden');
+                renderColorFilters(); // Dibujar colores
+            } catch (e) {
+                console.warn("Fallo al cargar simbología, usando fallback texto", e);
+                STATE.symbologyReady = true;
+            }
+        }
+
+        function renderColorFilters() {
+            const colors = ['W', 'U', 'B', 'R', 'G', 'C'];
+            DOM.colorContainer.innerHTML = colors.map(c => {
+                const sym = `{${c}}`;
+                const svg = STATE.symbology[sym] || '';
+                // Bordes de colores específicos
+                const colorBorders = {
+                    'W': 'border-gray-200 peer-checked:bg-gray-200/20 peer-checked:shadow-[0_0_10px_rgba(255,255,255,0.3)]',
+                    'U': 'border-blue-500 peer-checked:bg-blue-500/20 peer-checked:shadow-[0_0_10px_rgba(59,130,246,0.3)]',
+                    'B': 'border-purple-800 peer-checked:bg-purple-800/40 peer-checked:shadow-[0_0_10px_rgba(107,33,168,0.5)]',
+                    'R': 'border-red-500 peer-checked:bg-red-500/20 peer-checked:shadow-[0_0_10px_rgba(239,68,68,0.3)]',
+                    'G': 'border-green-500 peer-checked:bg-green-500/20 peer-checked:shadow-[0_0_10px_rgba(34,197,94,0.3)]',
+                    'C': 'border-gray-400 peer-checked:bg-gray-400/20 peer-checked:shadow-[0_0_10px_rgba(156,163,175,0.3)]'
+                };
+
+                return `
+                <div class="flex-1 max-w-[48px]">
+                    <label class="cursor-pointer relative flex flex-col items-center group">
+                        <input type="checkbox" value="${c.toLowerCase()}" class="filter-color peer hidden">
+                        <div class="w-10 h-10 bg-gray-900 border border-gray-700 rounded-full flex items-center justify-center transition-all duration-200 group-hover:border-gray-400 peer-checked:border-2 ${colorBorders[c]}">
+                            ${svg ? `<img src="${svg}" class="w-6 h-6 drop-shadow-lg">` : `<span class="font-bold text-gray-300">${c}</span>`}
+                        </div>
+                    </label>
+                </div>`;
+            }).join('');
+
+            // Añadir listeners para el Buffer automático
+            document.querySelectorAll('input, select').forEach(el => {
+                if (el.id === 'lang-ui') return; // UI lang doesn't affect image query
+                el.addEventListener('change', () => triggerBufferUpdate());
+                if (el.type === 'text' || el.type === 'number') {
+                    el.addEventListener('keyup', debounce(() => triggerBufferUpdate(), 600));
+                }
+            });
+        }
+
+        // --- 3. FUNCIONES DE APOYO Y FORMATEO ---
+
+        function formatOracle(text) {
+            if (!text) return '';
+            // Remplazar los símbolos como {W}, {U}, {T} por sus SVGs correspondientes de la API
+            return text.replace(/\{([^}]+)\}/g, (match) => {
+                const svgUrl = STATE.symbology[match];
+                if (svgUrl) {
+                    return `<img src="${svgUrl}" class="mtg-symbol inline-block h-4 w-4 mx-0.5 align-middle" alt="${match}">`;
+                }
+                return match;
+            });
+        }
+
+        function clearBuffer() {
+            STATE.buffer = [];
+            updateBufferUI();
+        }
+
+        // --- 4. TRADUCCIÓN AL VUELO ---
+        async function fetchTranslation(card, lang) {
+            if (lang === 'en' || card.lang === lang) return null;
+            try {
+                const res = await fetch(`https://api.scryfall.com/cards/${card.set}/${card.collector_number}/${lang}`, {
+                    headers: { 'Accept': 'application/json;q=0.9,*/*;q=0.8' }
+                });
+                if (res.ok) return await res.json();
+            } catch (e) { }
+            return null;
+        }
+
+        // --- 5. LÓGICA DEL MOTOR DE BÚSQUEDA Y BUFFER ---
+        function buildQuery() {
+            let queryParts = [];
+
+            // Búsqueda libre por ámbitos
+            const textStr = document.getElementById('filter-text').value.trim();
+            if (textStr) {
+                if (textStr.includes(':') || textStr.includes('=')) {
+                    queryParts.push(textStr);
+                } else {
+                    const scopeName = document.getElementById('search-name').checked;
+                    const scopeType = document.getElementById('search-type').checked;
+                    const scopeText = document.getElementById('search-text').checked;
+
+                    let textQueries = [];
+                    if (scopeName) textQueries.push(`"${textStr}"`);
+                    if (scopeType) textQueries.push(`t:"${textStr}"`);
+                    if (scopeText) textQueries.push(`o:"${textStr}"`);
+
+                    if (textQueries.length > 0) {
+                        queryParts.push(`(${textQueries.join(' OR ')})`);
+                    }
+                }
+            }
+
+            // Colores
+            const colors = Array.from(document.querySelectorAll('.filter-color:checked')).map(cb => cb.value);
+            if (colors.length > 0) queryParts.push(`id<=${colors.join('')}`);
+
+            // Tipos
+            const types = Array.from(document.querySelectorAll('.filter-type:checked')).map(cb => cb.value);
+            if (types.length > 0) queryParts.push(`(${types.map(t => `t:${t}`).join(' OR ')})`);
+
+            // Rarezas
+            const rarities = Array.from(document.querySelectorAll('.filter-rarity:checked')).map(cb => cb.value);
+            if (rarities.length > 0) queryParts.push(`(${rarities.map(r => `r:${r}`).join(' OR ')})`);
+
+            // Formato
+            const format = document.getElementById('filter-format').value;
+            if (format) queryParts.push(`f:${format}`);
+
+            // CMC
+            const cmcMin = document.getElementById('cmc-min').value;
+            const cmcMax = document.getElementById('cmc-max').value;
+            if (cmcMin !== '') queryParts.push(`cmc>=${cmcMin}`);
+            if (cmcMax !== '') queryParts.push(`cmc<=${cmcMax}`);
+
+            // Comandante
+            const isCommander = document.getElementById('filter-commander').checked;
+            if (isCommander) queryParts.push('is:commander');
+
+            // Idioma de la carta (arte)
+            const imgLang = document.getElementById('lang-img').value;
+            if (imgLang) queryParts.push(`lang:${imgLang}`);
+
+            return queryParts.join(' ');
+        }
+
+        // Sistema para evitar saturar la API (Rate Limit 500ms para random)
+        let lastFetchTime = 0;
+        const MIN_FETCH_INTERVAL = 600; // 600ms para estar seguros
+
+        async function safeFetch(url) {
+            const now = Date.now();
+            const timeSinceLastFetch = now - lastFetchTime;
+
+            if (timeSinceLastFetch < MIN_FETCH_INTERVAL) {
+                await new Promise(resolve => setTimeout(resolve, MIN_FETCH_INTERVAL - timeSinceLastFetch));
+            }
+
+            lastFetchTime = Date.now();
+            return fetch(url, {
+                headers: { 'Accept': 'application/json;q=0.9,*/*;q=0.8' }
+            });
+        }
+
+        async function maintainBuffer() {
+            if (!STATE.symbologyReady || STATE.isFetchingBuffer) return;
+
+            const q = buildQuery();
+            // Si el query cambió, abortar lo que había y empezar de 0
+            if (q !== STATE.activeQuery) {
+                clearBuffer();
+                STATE.activeQuery = q;
+            }
+
+            if (STATE.buffer.length < MAX_BUFFER) {
+                STATE.isFetchingBuffer = true;
+
+                try {
+                    const url = q ? `https://api.scryfall.com/cards/random?q=${encodeURIComponent(q)}` : 'https://api.scryfall.com/cards/random';
+                    const res = await safeFetch(url);
+
+                    if (res.ok) {
+                        const card = await res.json();
+                        // Evitar repetidas
+                        if (!STATE.buffer.find(c => c.id === card.id) && (!STATE.currentCardData || STATE.currentCardData.id !== card.id)) {
+                            STATE.buffer.push(card);
+                            updateBufferUI();
+                        }
+                    } else if (res.status === 429) {
+                        console.warn("Rate limit alcanzado, pausando buffer...");
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Pausa larga si nos pasamos
+                    } else if (res.status === 404) {
+                        // Si da 404, significa que no hay cartas con esos filtros. Dejamos de reintentar.
+                        STATE.isFetchingBuffer = false;
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Error en buffer:", e);
+                }
+
+                STATE.isFetchingBuffer = false;
+
+                // Si aún falta llenar, programar el siguiente intento
+                if (STATE.buffer.length < MAX_BUFFER) {
+                    setTimeout(maintainBuffer, MIN_FETCH_INTERVAL);
+                }
+            }
+        }
+
+        function updateBufferUI() {
+            DOM.bufferInd.innerHTML = '';
+            for (let i = 0; i < MAX_BUFFER; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full ${i < STATE.buffer.length ? 'bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.8)]' : 'bg-gray-700'}`;
+                DOM.bufferInd.appendChild(dot);
+            }
+        }
+
+        function triggerBufferUpdate() { maintainBuffer(); }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            };
+        }
+
+        // --- 6. RENDERIZADO UI DE LA CARTA ---
+        function setView(v) {
+            Object.values(DOM.views).forEach(el => el.classList.add('hidden'));
+            if (DOM.views[v]) DOM.views[v].classList.remove('hidden');
+        }
+
+        DOM.btnRandom.addEventListener('click', async () => {
+            const q = buildQuery();
+            if (q !== STATE.activeQuery) { clearBuffer(); STATE.activeQuery = q; }
+
+            setView('loading');
+            STATE.isFlipped = false;
+            STATE.currentCardData = null;
+            STATE.translatedData = null;
+            DOM.printsContainer.innerHTML = '';
+
+            // Consumir Buffer
+            if (STATE.buffer.length > 0) {
+                STATE.currentCardData = STATE.buffer.shift();
+                updateBufferUI();
+                setTimeout(maintainBuffer, MIN_FETCH_INTERVAL); // Reponer
+            } else {
+                try {
+                    const url = q ? `https://api.scryfall.com/cards/random?q=${encodeURIComponent(q)}` : 'https://api.scryfall.com/cards/random';
+                    const res = await safeFetch(url);
+                    if (!res.ok) throw new Error();
+                    STATE.currentCardData = await res.json();
+                } catch (e) {
+                    setView('error');
+                    return;
+                }
+            }
+
+            // Traducir si es necesario
+            STATE.translatedData = await fetchTranslation(STATE.currentCardData, DOM.langUI.value);
+
+            renderCard();
+            if (STATE.currentCardData.prints_search_uri) fetchPrints(STATE.currentCardData.prints_search_uri);
+        });
+
+        function renderCard() {
+            if (!STATE.currentCardData) return;
+            setView('card');
+
+            // Separar fuentes: Texto vs Imagen
+            const txtSource = STATE.translatedData || STATE.currentCardData;
+            const imgSource = STATE.currentCardData;
+
+            // Badge traducción
+            const badge = document.getElementById('translation-badge');
+            STATE.translatedData ? badge.classList.remove('hidden') : badge.classList.add('hidden');
+
+            // Lógica MDFC (Dos caras)
+            let faceTxt = txtSource;
+            let faceImg = imgSource;
+
+            if (imgSource.card_faces && imgSource.card_faces.length > 1) {
+                DOM.btnFlip.classList.remove('hidden');
+                faceImg = STATE.isFlipped ? imgSource.card_faces[1] : imgSource.card_faces[0];
+                if (txtSource.card_faces) faceTxt = STATE.isFlipped ? txtSource.card_faces[1] : txtSource.card_faces[0];
+            } else {
+                DOM.btnFlip.classList.add('hidden');
+            }
+
+            // Cargar Imagen (OJO a las adventures que no tienen image_uris en las caras)
+            const imgEl = document.getElementById('card-image');
+            imgEl.src = faceImg?.image_uris?.normal || imgSource?.image_uris?.normal || 'https://placehold.co/244x340/15181e/f59e0b?text=Arte+no+disponible';
+
+            // Textos descriptivos
+            document.getElementById('card-name').textContent = faceTxt.printed_name || faceTxt.name;
+            document.getElementById('card-type').textContent = faceTxt.printed_type_line || faceTxt.type_line;
+            document.getElementById('card-artist').textContent = faceImg.artist || imgSource.artist;
+            document.getElementById('card-mana').innerHTML = formatOracle(faceImg.mana_cost || faceTxt.mana_cost || "");
+
+            // Oráculo y Ambientación
+            document.getElementById('card-oracle-text').innerHTML = formatOracle(faceTxt.printed_text || faceTxt.oracle_text || "");
+
+            const flavorEl = document.getElementById('card-flavor-text');
+            if (faceTxt.flavor_text) {
+                flavorEl.innerHTML = `"${faceTxt.flavor_text}"`;
+                flavorEl.classList.remove('hidden');
+            } else {
+                flavorEl.classList.add('hidden');
+            }
+
+            // Estadísticas
+            const statsCont = document.getElementById('card-stats-container');
+            const statsEl = document.getElementById('card-stats');
+            if (faceTxt.power && faceTxt.toughness) {
+                statsEl.textContent = `${faceTxt.power} / ${faceTxt.toughness}`;
+                statsCont.classList.remove('hidden');
+            } else if (faceTxt.loyalty) {
+                statsEl.innerHTML = `<i class="fa-solid fa-shield-heart mr-2 text-amber-500"></i> ${faceTxt.loyalty}`;
+                statsCont.classList.remove('hidden');
+            } else {
+                statsCont.classList.add('hidden');
+            }
+
+            // Extra Info Footer
+            document.getElementById('card-set').textContent = imgSource.set;
+
+            const raritiesMap = { common: 'text-gray-300', uncommon: 'text-blue-400', rare: 'text-amber-400', mythic: 'text-orange-500 text-shadow-glow' };
+            const rEl = document.getElementById('card-rarity');
+            rEl.textContent = TRANSLATIONS[DOM.langUI.value][imgSource.rarity] || imgSource.rarity;
+            rEl.className = `capitalize font-bold text-base drop-shadow-md ${raritiesMap[imgSource.rarity] || 'text-white'}`;
+
+            const usd = imgSource.prices?.usd || imgSource.prices?.usd_foil;
+            const eur = imgSource.prices?.eur || imgSource.prices?.eur_foil;
+            document.getElementById('price-usd').textContent = usd ? `$${usd}` : '--';
+            document.getElementById('price-eur').textContent = eur ? `€${eur}` : '--';
+
+            // Links (EDHREC Generador)
+            document.getElementById('link-scryfall').href = imgSource.scryfall_uri || '#';
+            const edhrecName = (imgSource.name || "").split(' // ')[0].toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-');
+            document.getElementById('link-edhrec').href = `https://edhrec.com/cards/${edhrecName}`;
+        }
+
+        // Prints (Galería inferior)
+        async function fetchPrints(uri) {
+            DOM.views.prints.classList.remove('hidden');
+            DOM.printsContainer.innerHTML = '<div class="text-amber-500 py-6 px-4 font-bold animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Recuperando estilos...</div>';
+
+            try {
+                const res = await safeFetch(uri);
+                const data = await res.json();
+                DOM.printsContainer.innerHTML = '';
+
+                if (data.data) {
+                    data.data.forEach(print => {
+                        const imgUrl = print.image_uris?.normal || (print.card_faces && print.card_faces[0].image_uris?.normal);
+                        if (imgUrl) {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'flex-none w-32 md:w-36 cursor-pointer relative group transition-transform duration-300 hover:-translate-y-2';
+                            wrapper.innerHTML = `
+                                <img src="${imgUrl}" class="w-full rounded-[4.5%] border-2 border-transparent group-hover:border-amber-500 shadow-lg group-hover:shadow-[0_10px_20px_rgba(245,158,11,0.3)]">
+                                <div class="absolute bottom-1 right-1 bg-black/90 text-white text-[10px] px-2 py-0.5 rounded font-mono uppercase border border-gray-600 shadow-md">${print.set}</div>
+                                ${print.full_art ? '<div class="absolute top-1 left-1 bg-amber-500 text-black text-[9px] px-1.5 py-0.5 rounded font-bold uppercase shadow-md">Full Art</div>' : ''}
+                            `;
+                            wrapper.onclick = async () => {
+                                STATE.isFlipped = false;
+                                STATE.currentCardData = print;
+                                STATE.translatedData = await fetchTranslation(print, DOM.langUI.value);
+                                renderCard();
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            };
+                            DOM.printsContainer.appendChild(wrapper);
+                        }
+                    });
+                }
+            } catch (e) {
+                DOM.printsContainer.innerHTML = '<p class="text-red-400 text-sm py-4">Error al cargar galería.</p>';
+            }
+        }
+
+        // --- 7. EVENTOS VARIOS ---
+        DOM.btnFlip.addEventListener('click', () => {
+            STATE.isFlipped = !STATE.isFlipped;
+            const img = document.getElementById('card-image');
+            img.style.transform = 'rotateY(90deg) scale(0.9)';
+            setTimeout(() => {
+                renderCard();
+                img.style.transform = 'rotateY(0deg) scale(1)';
+            }, 250);
+        });
+
+        DOM.btnReset.addEventListener('click', () => {
+            // Desmarcamos todo menos los ámbitos de búsqueda
+            document.querySelectorAll('input[type="checkbox"]:not(.search-scope)').forEach(cb => cb.checked = false);
+            // Volvemos a marcar los ámbitos de búsqueda por defecto
+            document.querySelectorAll('.search-scope').forEach(cb => cb.checked = true);
+
+            document.getElementById('filter-format').value = '';
+            document.getElementById('cmc-min').value = '';
+            document.getElementById('cmc-max').value = '';
+            document.getElementById('filter-text').value = '';
+            triggerBufferUpdate();
+        });
+
+        // Cambio de Idioma UI (Aplica diccionario y retraduce carta si hay)
+        DOM.langUI.addEventListener('change', async (e) => {
+            const lang = e.target.value;
+            const dict = TRANSLATIONS[lang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                if (dict[el.getAttribute('data-i18n')]) el.textContent = dict[el.getAttribute('data-i18n')];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                if (dict[el.getAttribute('data-i18n-placeholder')]) el.placeholder = dict[el.getAttribute('data-i18n-placeholder')];
+            });
+
+            if (STATE.currentCardData) {
+                STATE.translatedData = await fetchTranslation(STATE.currentCardData, lang);
+                renderCard();
+            }
+        });
+
+        // Inicio
+        window.onload = async () => {
+            await fetchSymbology();
+            triggerBufferUpdate();
+            updateBufferUI();
+        };
+
+    </script>
+</body>
+
+</html>

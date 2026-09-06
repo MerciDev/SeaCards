@@ -177,7 +177,14 @@ export default function Search() {
                   const imgUrl = card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal
                   
                   return (
-                    <div key={card.id} className="rounded-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-2 shadow-xl hover:shadow-[0_20px_40px_rgba(245,158,11,0.25)] border border-white/5">
+                    <div 
+                      key={card.id} 
+                      onClick={() => {
+                        const slug = card.name ? card.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') : card.id;
+                        navigate(`/card/${slug}`)
+                      }}
+                      className="cursor-pointer rounded-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-2 shadow-xl hover:shadow-[0_20px_40px_rgba(245,158,11,0.25)] border border-white/5"
+                    >
                       {imgUrl ? (
                          <img src={imgUrl} alt={card.name} loading="lazy" className="w-full h-auto rounded-xl" />
                       ) : (
@@ -194,7 +201,8 @@ export default function Search() {
                         </div>
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const slug = card.name ? card.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') : card.id;
                               navigate(`/card/${slug}`)
                             }}
@@ -203,7 +211,7 @@ export default function Search() {
                             <i className="fa-solid fa-eye mr-2"></i> {t('view')}
                           </button>
                           <button 
-                            onClick={() => handleSaveCard(card)}
+                            onClick={(e) => { e.stopPropagation(); handleSaveCard(card); }}
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm transition-colors border border-indigo-400/50 flex items-center shadow-lg"
                             title={t('saveBtn')}
                           >
@@ -211,6 +219,7 @@ export default function Search() {
                           </button>
                           <a 
                             href={card.scryfall_uri} target="_blank" rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm transition-colors border border-gray-600 flex items-center shadow-lg"
                             title="Ver en Scryfall"
                           >

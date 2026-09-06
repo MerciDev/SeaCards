@@ -159,7 +159,14 @@ export default function SavedCards() {
                 const imgUrl = card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal
                 
                 return (
-                  <div key={card.supabase_id} className="rounded-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-2 shadow-xl hover:shadow-[0_20px_40px_rgba(245,158,11,0.25)] border border-white/5">
+                  <div 
+                    key={card.supabase_id} 
+                    onClick={() => {
+                      const slug = card.name ? card.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') : card.id;
+                      navigate(`/card/${slug}`)
+                    }}
+                    className="cursor-pointer rounded-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-2 shadow-xl hover:shadow-[0_20px_40px_rgba(245,158,11,0.25)] border border-white/5"
+                  >
                     {imgUrl ? (
                        <img src={imgUrl} alt={card.name} loading="lazy" className="w-full h-auto rounded-xl" />
                     ) : (
@@ -185,7 +192,8 @@ export default function SavedCards() {
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button 
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             const slug = card.name ? card.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') : card.id;
                             navigate(`/card/${slug}`)
                           }}
@@ -194,7 +202,7 @@ export default function SavedCards() {
                           <i className="fa-solid fa-eye mr-2"></i> {t('view')}
                         </button>
                         <button 
-                          onClick={() => handleDelete(card.supabase_id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(card.supabase_id); }}
                           className="bg-red-900/80 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors border border-red-500/50 flex items-center shadow-lg"
                           title={t('deleteBtn')}
                         >

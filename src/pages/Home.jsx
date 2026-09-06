@@ -155,12 +155,23 @@ export default function Home() {
           {loading ? (
             <Loader message={t('scrying')} />
           ) : !card ? (
-             <div className="glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[500px]">
-               <i className="fa-brands fa-wizards-of-the-coast text-7xl text-amber-500/80 mb-8 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]"></i>
-               <h2 className="text-4xl mtg-font text-white mb-4 font-bold">{t('welcomeTitle')}</h2>
-               <p className="text-gray-400 text-lg max-w-md">{t('welcomeDesc')}</p>
-             </div>
-           ) : (
+            <>
+              <div className="glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[400px] lg:min-h-[500px]">
+                <i className="fa-brands fa-wizards-of-the-coast text-7xl text-amber-500/80 mb-8 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]"></i>
+                <h2 className="text-4xl mtg-font text-white mb-4 font-bold">{t('welcomeTitle')}</h2>
+                <p className="text-gray-400 text-lg max-w-md">{t('welcomeDesc')}</p>
+              </div>
+              {/* Mobile invoke button below welcome panel */}
+              <button 
+                onClick={fetchRandomCard}
+                disabled={loading}
+                className="lg:hidden w-full bg-gradient-to-b from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-orange-400/50 text-xl disabled:opacity-50"
+              >
+                <i className={`fa-solid ${loading ? 'fa-spinner fa-spin' : 'fa-bolt'} mr-3`}></i>
+                <span className="tracking-wide">{loading ? t('processing') : t('invoke')}</span>
+              </button>
+            </>
+          ) : (
             <CardDetail 
               baseCard={card} 
               mobileActionNode={

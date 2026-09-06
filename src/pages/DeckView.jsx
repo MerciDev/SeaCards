@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Header from '../components/Header'
@@ -30,6 +30,43 @@ export default function DeckView() {
   const [editDesc, setEditDesc] = useState('')
   const [editImage, setEditImage] = useState('')
   const [editFormat, setEditFormat] = useState('Standard')
+
+  // Mobile long press state
+  const [activeMobileCard, setActiveMobileCard] = useState(null)
+  const longPressTimer = useRef(null)
+  const isLongPress = useRef(false)
+
+  const handleTouchStart = (scryfall_id) => {
+    isLongPress.current = false
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true
+      setActiveMobileCard(activeMobileCard === scryfall_id ? null : scryfall_id)
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50)
+      }
+    }, 500)
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+    }
+  }
+
+  const handleTouchMove = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+    }
+  }
+
+  useEffect(() => {
+    const closeMenu = (e) => {
+      if (e.target.closest('button')) return
+      setActiveMobileCard(null)
+    }
+    document.addEventListener('touchstart', closeMenu)
+    return () => document.removeEventListener('touchstart', closeMenu)
+  }, [])
 
   useEffect(() => {
     const fetchDeck = async () => {
@@ -555,13 +592,25 @@ export default function DeckView() {
                     {viewMode === 'grid' && (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 lg:gap-6">
                         {section.groupedCards.map((card, idx) => (
-                          <div key={card.uid || card.scryfall_id || idx} className="relative group rounded-xl overflow-hidden shadow-lg hover:shadow-[0_15px_30px_rgba(245,158,11,0.25)] transition-all duration-300 hover:-translate-y-2 border border-white/5">
+                          <div 
+                            key={card.uid || card.scryfall_id || idx} 
+                            className="relative group rounded-xl overflow-hidden shadow-lg hover:shadow-[0_15px_30px_rgba(245,158,11,0.25)] transition-all duration-300 hover:-translate-y-2 border border-white/5"
+                            onTouchStart={() => handleTouchStart(card.scryfall_id)}
+                            onTouchEnd={handleTouchEnd}
+                            onTouchMove={handleTouchMove}
+                          >
                             <img 
                               src={card.image_url || 'https://via.placeholder.com/244x340.png?text=No+Image'} 
                               alt={card.name} 
                               loading="lazy"
                               className="w-full aspect-[63/88] object-cover cursor-pointer"
-                              onClick={() => navigate(`/card/${card.scryfall_id}`)}
+                              onClick={(e) => {
+                                if (isLongPress.current) {
+                                  e.preventDefault()
+                                  return
+                                }
+                                navigate(`/card/${card.scryfall_id}`)
+                              }}
                             />
                             {card.count > 1 && (
                               <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-gray-300 font-medium text-[11px] px-1.5 py-0.5 rounded border border-white/10 z-10 pointer-events-none">
@@ -571,7 +620,7 @@ export default function DeckView() {
                             {isOwner && isLegendaryCreature(card) && (
                               <button 
                                 onClick={(e) => handleToggleCommander(card.scryfall_id, e)}
-                                className={`absolute top-2 right-12 w-9 h-9 rounded-xl text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg border z-20 ${card.is_commander ? 'bg-amber-500 hover:bg-amber-400 border-amber-300/50' : 'bg-gray-800/90 hover:bg-gray-700 border-gray-600/50'}`}
+                                className={`absolute top-2 right-12 w-9 h-9 rounded-xl text-white flex items-center justify-center transition-opacity shadow-lg border z-20 ${card.is_commander ? 'bg-amber-500 hover:bg-amber-400 border-amber-300/50' : 'bg-gray-800/90 hover:bg-gray-700 border-gray-600/50'} ${activeMobileCard === card.scryfall_id ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                                 title={card.is_commander ? "Quitar comandante" : "Hacer comandante"}
                               >
                                 <i className="fa-solid fa-star"></i>
@@ -580,7 +629,7 @@ export default function DeckView() {
                             {isOwner && (
                               <button 
                                 onClick={(e) => handleDeleteGroupCard(card.scryfall_id, e)}
-                                className="absolute top-2 right-2 w-9 h-9 rounded-xl bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-500 border border-red-400/50 z-20"
+                                className={`absolute top-2 right-2 w-9 h-9 rounded-xl bg-red-600/90 text-white flex items-center justify-center transition-opacity shadow-lg hover:bg-red-500 border border-red-400/50 z-20 ${activeMobileCard === card.scryfall_id ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                                 title="Quitar una copia"
                               >
                                 <i className="fa-solid fa-minus"></i>
@@ -602,13 +651,22 @@ export default function DeckView() {
                           key={card.scryfall_id} 
                           className={`peer relative group rounded-xl overflow-hidden shadow-[0_-5px_15px_rgba(0,0,0,0.4)] border border-white/10 transition-all duration-300 hover:z-50 hover:shadow-[0_15px_30px_rgba(245,158,11,0.4)] peer-hover:translate-y-44 w-full aspect-[63/88] ${idx > 0 ? '-mt-44' : ''}`}
                           style={{ zIndex: idx }}
+                          onTouchStart={() => handleTouchStart(card.scryfall_id)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchMove={handleTouchMove}
                         >
                           <img 
                             src={card.image_url || 'https://via.placeholder.com/244x340.png?text=No+Image'} 
                             alt={card.name} 
                             loading="lazy"
                             className="w-full h-full object-cover cursor-pointer"
-                            onClick={() => navigate(`/card/${card.scryfall_id}`)}
+                            onClick={(e) => {
+                              if (isLongPress.current) {
+                                e.preventDefault()
+                                return
+                              }
+                              navigate(`/card/${card.scryfall_id}`)
+                            }}
                           />
                           {card.count > 1 && (
                             <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-gray-300 font-medium text-[11px] px-1.5 py-0.5 rounded border border-white/10 z-10 pointer-events-none">
@@ -618,7 +676,7 @@ export default function DeckView() {
                           {isOwner && isLegendaryCreature(card) && (
                             <button 
                               onClick={(e) => handleToggleCommander(card.scryfall_id, e)}
-                              className={`absolute top-2 right-12 w-9 h-9 rounded-xl text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg border z-20 ${card.is_commander ? 'bg-amber-500 hover:bg-amber-400 border-amber-300/50' : 'bg-gray-800/90 hover:bg-gray-700 border-gray-600/50'}`}
+                              className={`absolute top-2 right-12 w-9 h-9 rounded-xl text-white flex items-center justify-center transition-opacity shadow-lg border z-20 ${card.is_commander ? 'bg-amber-500 hover:bg-amber-400 border-amber-300/50' : 'bg-gray-800/90 hover:bg-gray-700 border-gray-600/50'} ${activeMobileCard === card.scryfall_id ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                               title={card.is_commander ? "Quitar comandante" : "Hacer comandante"}
                             >
                               <i className="fa-solid fa-star"></i>
@@ -627,7 +685,7 @@ export default function DeckView() {
                           {isOwner && (
                             <button 
                               onClick={(e) => handleDeleteGroupCard(card.scryfall_id, e)}
-                              className="absolute top-2 right-2 w-9 h-9 rounded-xl bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-500 border border-red-400/50 z-20"
+                              className={`absolute top-2 right-2 w-9 h-9 rounded-xl bg-red-600/90 text-white flex items-center justify-center transition-opacity shadow-lg hover:bg-red-500 border border-red-400/50 z-20 ${activeMobileCard === card.scryfall_id ? 'opacity-100' : 'opacity-0 lg:group-hover:opacity-100'}`}
                               title="Quitar una copia"
                             >
                               <i className="fa-solid fa-minus"></i>

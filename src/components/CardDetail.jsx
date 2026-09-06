@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useSymbology } from '../contexts/SymbologyContext'
 import { useToast } from '../contexts/ToastContext'
 import Loader from './Loader'
+import { scryfallFetch } from '../lib/scryfall'
 
 const formatManaCost = (cost, symbology) => {
   if (!cost) return null
@@ -350,9 +351,16 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
         ]
 
         const [combosRes, ...modeResArray] = await Promise.all([
-          fetch(`https://json.edhrec.com/pages/combos/${slug}.json`).catch(() => ({ ok: false })),
-          ...modeConfigs.map(cfg => fetch(`https://json.edhrec.com/pages/${cfg.mode}/${slug}.json`).catch(() => ({ ok: false })))
+          fetch(`https://json.edhrec.com/pages/combos/${slug}.json`).catch(() => ({ ok: false, status: 0 })),
+          ...modeConfigs.map(cfg => fetch(`https://json.edhrec.com/pages/${cfg.mode}/${slug}.json`).catch(() => ({ ok: false, status: 0 })))
         ])
+
+        // If all EDHREC responses are 403, EDHREC is blocking us — bail out immediately
+        const allBlocked = [combosRes, ...modeResArray].every(r => !r.ok && (r.status === 403 || r.status === 0))
+        if (allBlocked) {
+          if (isActive) setFetchingSimilar(false)
+          return
+        }
         
         let combosNames = []
         let combosStructuredList = []
@@ -546,7 +554,7 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
             if (!isActive) return
             const chunk = uniqueNames.slice(i, i + 75).map(name => ({ name }))
             try {
-              const scryRes = await fetch('https://api.scryfall.com/cards/collection', {
+              const scryRes = await scryfallFetch('https://api.scryfall.com/cards/collection', {
                  method: 'POST',
                  headers: { 'Content-Type': 'application/json' },
                  body: JSON.stringify({ identifiers: chunk })
@@ -558,6 +566,9 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
                      scryfallCards[c.name] = c
                    })
                  }
+              } else if (scryRes.status === 429) {
+                // Rate limited — stop processing more chunks
+                break
               }
             } catch (e) {
               console.error("Scryfall collection error", e)

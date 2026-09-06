@@ -594,11 +594,14 @@ export default function DeckView() {
                         {section.groupedCards.map((card, idx) => (
                           <div 
                             key={card.uid || card.scryfall_id || idx} 
-                            className="relative group rounded-xl overflow-hidden shadow-lg hover:shadow-[0_15px_30px_rgba(245,158,11,0.25)] transition-all duration-300 hover:-translate-y-2 border border-white/5"
+                            className={`relative group rounded-xl overflow-hidden shadow-lg transition-all duration-300 border border-white/5 select-none [-webkit-touch-callout:none] ${activeMobileCard === card.scryfall_id ? 'scale-95 shadow-none' : 'hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(245,158,11,0.25)]'}`}
                             onTouchStart={() => handleTouchStart(card.scryfall_id)}
                             onTouchEnd={handleTouchEnd}
                             onTouchMove={handleTouchMove}
                           >
+                            {activeMobileCard === card.scryfall_id && (
+                              <div className="absolute inset-0 bg-black/60 z-10 pointer-events-none transition-opacity duration-300"></div>
+                            )}
                             <img 
                               src={card.image_url || 'https://via.placeholder.com/244x340.png?text=No+Image'} 
                               alt={card.name} 
@@ -649,12 +652,15 @@ export default function DeckView() {
                       {section.groupedCards.map((card, idx) => (
                         <div 
                           key={card.scryfall_id} 
-                          className={`peer relative group rounded-xl overflow-hidden shadow-[0_-5px_15px_rgba(0,0,0,0.4)] border border-white/10 transition-all duration-300 hover:z-50 hover:shadow-[0_15px_30px_rgba(245,158,11,0.4)] peer-hover:translate-y-44 w-full aspect-[63/88] ${idx > 0 ? '-mt-44' : ''}`}
-                          style={{ zIndex: idx }}
+                          className={`peer relative group rounded-xl overflow-hidden border border-white/10 transition-all duration-300 select-none [-webkit-touch-callout:none] w-full aspect-[63/88] ${idx > 0 ? '-mt-44' : ''} ${activeMobileCard === card.scryfall_id ? 'scale-95 shadow-none z-50' : 'shadow-[0_-5px_15px_rgba(0,0,0,0.4)] hover:z-50 hover:shadow-[0_15px_30px_rgba(245,158,11,0.4)] peer-hover:translate-y-44'}`}
+                          style={{ zIndex: activeMobileCard === card.scryfall_id ? 50 : idx }}
                           onTouchStart={() => handleTouchStart(card.scryfall_id)}
                           onTouchEnd={handleTouchEnd}
                           onTouchMove={handleTouchMove}
                         >
+                          {activeMobileCard === card.scryfall_id && (
+                            <div className="absolute inset-0 bg-black/60 z-10 pointer-events-none transition-opacity duration-300"></div>
+                          )}
                           <img 
                             src={card.image_url || 'https://via.placeholder.com/244x340.png?text=No+Image'} 
                             alt={card.name} 

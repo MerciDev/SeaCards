@@ -5,6 +5,7 @@ import SidebarFilters from '../components/SidebarFilters'
 import Loader from '../components/Loader'
 import Header from '../components/Header'
 import { useLanguage } from '../contexts/LanguageContext'
+import { fetchCardsByIds } from '../lib/scryfall'
 
 export default function SavedCards() {
   const { t } = useLanguage()
@@ -26,33 +27,12 @@ export default function SavedCards() {
         .order('created_at', { ascending: false })
         
       if (data && data.length > 0) {
-        // 2. Pedimos los datos completos a Scryfall en bloques de 75 (límite de la API)
-        const scryfallData = []
-        const batches = []
-        for (let i = 0; i < data.length; i += 75) {
-          batches.push(data.slice(i, i + 75))
-        }
+        const ids = data.map(row => row.scryfall_id)
+        const scryfallCards = await fetchCardsByIds(ids)
 
-        for (const batch of batches) {
-          const identifiers = batch.map(row => ({ id: row.scryfall_id }))
-          try {
-            const res = await fetch('https://api.scryfall.com/cards/collection', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ identifiers })
-            })
-            if (res.ok) {
-              const resJson = await res.json()
-              scryfallData.push(...resJson.data)
-            }
-          } catch (err) {
-            console.error("Error fetching batch from scryfall:", err)
-          }
-        }
-        
-        // 3. Fusionamos el ID de supabase con los datos completos de scryfall
+        // Fusionamos el ID de supabase con los datos completos de scryfall
         const merged = data.map(dbRow => {
-          const scryfallCard = scryfallData.find(c => c.id === dbRow.scryfall_id)
+          const scryfallCard = scryfallCards.find(c => c.id === dbRow.scryfall_id)
           return scryfallCard ? { ...scryfallCard, supabase_id: dbRow.id, user_tags: dbRow.tags || [] } : null
         }).filter(Boolean)
 

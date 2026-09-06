@@ -5,6 +5,7 @@ import Header from '../components/Header'
 import Loader from '../components/Loader'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useToast } from '../contexts/ToastContext'
+import { scryfallFetch, sleep } from '../lib/scryfall'
 
 export default function DeckView() {
   const { id } = useParams()
@@ -134,7 +135,7 @@ export default function DeckView() {
     let enrichedData = {}
     try {
       for (const chunk of chunks) {
-        const response = await fetch("https://api.scryfall.com/cards/collection", {
+        const response = await scryfallFetch("https://api.scryfall.com/cards/collection", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ identifiers: chunk.map(id => ({ id })) })
@@ -150,7 +151,7 @@ export default function DeckView() {
             }
           })
         }
-        await new Promise(r => setTimeout(r, 100))
+        if (chunks.indexOf(chunk) < chunks.length - 1) await sleep(150)
       }
       
       const fullyEnrichedCards = parsedCards.map(c => {

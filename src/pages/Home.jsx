@@ -68,6 +68,11 @@ export default function Home() {
       try {
         const url = queryStr ? `https://api.scryfall.com/cards/random?q=${encodeURIComponent(queryStr)}` : 'https://api.scryfall.com/cards/random'
         const res = await fetch(url)
+        if (res.status === 429) {
+          await new Promise(r => setTimeout(r, 2000))
+          isRefillingRef.current = false
+          return
+        }
         if (res.ok) {
           const newCard = await res.json()
           if (mounted) {
@@ -86,7 +91,7 @@ export default function Home() {
     }
     
     if (buffer.length < 5 && !isRefillingRef.current) {
-      timeout = setTimeout(refillBuffer, 500)
+      timeout = setTimeout(refillBuffer, 1000) // 1s between refills to respect rate limits
     }
     
     return () => {

@@ -60,6 +60,7 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   const [likedCardId, setLikedCardId] = useState(null)
   const [cardTags, setCardTags] = useState([])
   const [newTag, setNewTag] = useState('')
+  const [availableTags, setAvailableTags] = useState([])
   const [prints, setPrints] = useState([])
   const [fetchingPrints, setFetchingPrints] = useState(false)
   const [edhrecModes, setEdhrecModes] = useState([])
@@ -82,6 +83,35 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       setUserDecks(data)
     }
   }
+
+  useEffect(() => {
+    const fetchUserTags = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { data, error } = await supabase
+        .from('liked_cards')
+        .select('tags')
+        .eq('user_id', user.id)
+        .not('tags', 'is', null)
+        
+      if (data && !error) {
+        const tagCounts = {}
+        data.forEach(row => {
+          if (Array.isArray(row.tags)) {
+            row.tags.forEach(t => {
+              tagCounts[t] = (tagCounts[t] || 0) + 1
+            })
+          }
+        })
+        const sortedTags = Object.entries(tagCounts)
+          .sort((a, b) => b[1] - a[1])
+          .map(e => e[0])
+        setAvailableTags(sortedTags)
+      }
+    }
+    fetchUserTags()
+  }, [])
 
   const handleOpenDeckModal = () => {
     fetchUserDecks()
@@ -968,6 +998,32 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
                 className="w-full bg-black/40 text-gray-200 text-sm rounded-lg py-2.5 px-4 border border-gray-700/60 focus:border-amber-500 outline-none transition-colors"
               />
               <i className="fa-solid fa-tag absolute right-3.5 top-3 text-gray-600 group-focus-within:text-amber-500 transition-colors text-xs"></i>
+              
+              {availableTags.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2">Sugerencias</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableTags
+                      .filter(t => !cardTags.includes(t) && t.toLowerCase().includes(newTag.toLowerCase()))
+                      .slice(0, 10)
+                      .map(t => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            const newTags = [...cardTags, t]
+                            setCardTags(newTags)
+                            setNewTag('')
+                            supabase.from('liked_cards').update({ tags: newTags }).eq('id', likedCardId).then()
+                          }}
+                          className="text-xs bg-gray-800 hover:bg-amber-600/30 text-gray-400 hover:text-amber-400 border border-gray-700 hover:border-amber-500/50 px-2 py-1 rounded-md transition-colors shadow-sm"
+                        >
+                          <i className="fa-solid fa-plus mr-1 opacity-50"></i>{t}
+                        </button>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

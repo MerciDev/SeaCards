@@ -52,6 +52,7 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   const symbology = useSymbology()
   const { showToast } = useToast()
   
+  const [prevBaseCard, setPrevBaseCard] = useState(baseCard)
   const [card, setCard] = useState(baseCard)
   const [localizedData, setLocalizedData] = useState(null)
   const [fetchingLocal, setFetchingLocal] = useState(false)
@@ -72,6 +73,32 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   const [showExtraInfo, setShowExtraInfo] = useState(false)
   const [isFlipped, setIsFlipped] = useState(false)
   
+  const [hasScrolled, setHasScrolled] = useState(false)
+  
+  if (baseCard !== prevBaseCard) {
+    setPrevBaseCard(baseCard)
+    setCard(baseCard)
+    setShowExtraInfo(false)
+    setIsFlipped(false)
+    setLocalizedData(null)
+    setHasScrolled(false)
+    window.scrollTo({ top: 0 })
+  }
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 30) {
+        setHasScrolled(true)
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    // If screen is large enough that we can't scroll, just reveal it immediately
+    if (window.innerHeight > document.body.scrollHeight - 50) {
+      setHasScrolled(true)
+    }
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [card.id])
+
   const [showDeckModal, setShowDeckModal] = useState(false)
   const [userDecks, setUserDecks] = useState([])
   const [newDeckName, setNewDeckName] = useState('')
@@ -242,13 +269,6 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   const toggleSection = (title) => {
     setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }))
   }
-
-  // Reset local state if baseCard changes from outside
-  useEffect(() => {
-    setCard(baseCard)
-    setShowExtraInfo(false)
-    setIsFlipped(false)
-  }, [baseCard])
 
   useEffect(() => {
     if (!card) return
@@ -1030,7 +1050,7 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
 
       </div>
 
-      <div className="p-8 xl:w-[55%] flex flex-col relative bg-[#111318]/90">
+      <div className={`p-8 xl:w-[55%] flex flex-col relative bg-[#111318]/90 transition-all duration-700 xl:opacity-100 xl:translate-y-0 ${hasScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 xl:translate-y-0'}`}>
         {(() => {
           const displayCard = localizedData || card
           

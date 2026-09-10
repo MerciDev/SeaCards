@@ -68,7 +68,7 @@ export default function CardView() {
                <h2 className="text-2xl text-white font-bold mb-2">{t('errorEmpty') || 'Carta no encontrada'}</h2>
             </div>
           ) : (
-            <CardDetail key={card.id} baseCard={card} />
+            <CardDetail baseCard={card} />
           )}
         </main>
       </div>

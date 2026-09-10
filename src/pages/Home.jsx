@@ -70,22 +70,19 @@ export default function Home() {
     setBuffer([])
   }, [queryStr])
 
+  const bufferLenRef = useRef(0)
+  useEffect(() => { bufferLenRef.current = buffer.length }, [buffer])
+
   useEffect(() => {
     let mounted = true
-    let timeout
-
-    const refillBuffer = async () => {
-      if (isRefillingRef.current) return
-      isRefillingRef.current = true
+    
+    const interval = setInterval(async () => {
+      if (isRefillingRef.current || bufferLenRef.current >= 5) return
       
+      isRefillingRef.current = true
       try {
         const url = queryStr ? `https://api.scryfall.com/cards/random?q=${encodeURIComponent(queryStr)}` : 'https://api.scryfall.com/cards/random'
         const res = await fetch(url)
-        if (res.status === 429) {
-          await new Promise(r => setTimeout(r, 2000))
-          isRefillingRef.current = false
-          return
-        }
         if (res.ok) {
           const newCard = await res.json()
           if (mounted) {
@@ -101,17 +98,13 @@ export default function Home() {
       } finally {
         isRefillingRef.current = false
       }
-    }
-    
-    if (buffer.length < 5 && !isRefillingRef.current) {
-      timeout = setTimeout(refillBuffer, 1000) // 1s between refills to respect rate limits
-    }
+    }, 1000)
     
     return () => {
       mounted = false
-      clearTimeout(timeout)
+      clearInterval(interval)
     }
-  }, [buffer.length, queryStr])
+  }, [queryStr])
 
   const clickLockRef = useRef(false)
 
@@ -197,7 +190,6 @@ export default function Home() {
             </>
           ) : (
             <CardDetail 
-              key={card.id}
               baseCard={card} 
               mobileActionNode={
                 <button 

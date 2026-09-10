@@ -32,7 +32,20 @@ export default function Home() {
         if (textQueries.length > 0) parts.push(`(${textQueries.join(' OR ')})`)
       }
     }
-    if (f.colors.length > 0) parts.push(`id<=${f.colors.join('')}`)
+    if (f.colors && typeof f.colors === 'object' && !Array.isArray(f.colors)) {
+      const greenColors = Object.entries(f.colors).filter(([_, state]) => state === 'green').map(([c]) => c)
+      const redColors = Object.entries(f.colors).filter(([_, state]) => state === 'red').map(([c]) => c)
+      const yellowColors = Object.entries(f.colors).filter(([_, state]) => state === 'yellow').map(([c]) => c)
+
+      greenColors.forEach(c => parts.push(c === 'c' ? 'id:c' : `id>=${c}`))
+      redColors.forEach(c => parts.push(c === 'c' ? '-id:c' : `-id>=${c}`))
+      if (yellowColors.length > 0) {
+        const yellowQueries = yellowColors.map(c => c === 'c' ? 'id:c' : `id>=${c}`)
+        parts.push(`(${yellowQueries.join(' OR ')})`)
+      }
+    } else if (f.colors && Array.isArray(f.colors) && f.colors.length > 0) {
+      parts.push(`id<=${f.colors.join('')}`)
+    }
     if (f.types.length > 0) parts.push(`(${f.types.map(t => `t:${t}`).join(' OR ')})`)
     if (f.rarities.length > 0) parts.push(`(${f.rarities.map(r => `r:${r}`).join(' OR ')})`)
     if (f.formatFilters && Object.keys(f.formatFilters).length > 0) {
@@ -48,7 +61,7 @@ export default function Home() {
     if (f.set) parts.push(`e:${f.set}`)
     if (f.cmcMin !== '') parts.push(`cmc>=${f.cmcMin}`)
     if (f.cmcMax !== '') parts.push(`cmc<=${f.cmcMax}`)
-    if (f.isCommander) parts.push('(t:legendary (t:creature OR t:planeswalker))')
+    if (f.isCommander) parts.push('is:commander')
     if (f.imgLang && f.imgLang !== 'en') parts.push(`lang:${f.imgLang}`)
     setQueryStr(parts.join(' '))
   }

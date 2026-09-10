@@ -68,6 +68,8 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   const [collapsedSections, setCollapsedSections] = useState({})
   const [printsCollapsed, setPrintsCollapsed] = useState(true)
   const [allSavedCardIds, setAllSavedCardIds] = useState(new Set())
+  const [showExtraInfo, setShowExtraInfo] = useState(false)
+  const [isFlipped, setIsFlipped] = useState(false)
   
   const [showDeckModal, setShowDeckModal] = useState(false)
   const [userDecks, setUserDecks] = useState([])
@@ -214,6 +216,8 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   // Reset local state if baseCard changes from outside
   useEffect(() => {
     setCard(baseCard)
+    setShowExtraInfo(false)
+    setIsFlipped(false)
   }, [baseCard])
 
   useEffect(() => {
@@ -310,9 +314,8 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   }, [card, lang])
 
   useEffect(() => {
-    if (!card) return
+    if (!card || !showExtraInfo) return
     let mounted = true
-    // Debounce: only fetch prints if the user stays on this card for 1.5s
     const timer = setTimeout(async () => {
       if (!mounted) return
       setFetchingPrints(true)
@@ -328,12 +331,12 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       } finally {
         if (mounted) setFetchingPrints(false)
       }
-    }, 1500)
+    }, 100)
     return () => { mounted = false; clearTimeout(timer) }
-  }, [card?.oracle_id])
+  }, [card?.oracle_id, showExtraInfo])
 
   useEffect(() => {
-    if (!card || card.legalities?.commander !== 'legal') {
+    if (!card || card.legalities?.commander !== 'legal' || !showExtraInfo) {
       setEdhrecModes([])
       return
     }
@@ -587,10 +590,9 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
         if (isActive) setFetchingSimilar(false)
       }
     }
-    // Debounce: only fetch EDHREC if the user stays on this card for 2s
-    const timer = setTimeout(() => { fetchSimilar() }, 2000)
+    const timer = setTimeout(() => { fetchSimilar() }, 100)
     return () => { isActive = false; clearTimeout(timer) }
-  }, [card?.name])
+  }, [card?.name, showExtraInfo])
 
   useEffect(() => {
     const checkSaved = async () => {
@@ -852,11 +854,22 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       <div className="flex flex-col xl:flex-row flex-grow relative">
         <div className="p-8 xl:w-[45%] flex flex-col items-center bg-gradient-to-b from-black/40 to-black/10 border-r border-b xl:border-b-0 border-gray-800/50 shrink-0">
         <div className="relative w-full max-w-[340px]">
-          <img 
-            src={card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal} 
-            alt={card.name}
-            className="w-full aspect-[63/88] object-cover rounded-[4.75%] shadow-[0_15px_35px_rgba(0,0,0,0.6)] border border-white/5 bg-gray-900/50"
-          />
+          <div className="relative w-full aspect-[63/88]">
+            <img 
+              src={card.card_faces && card.card_faces[1]?.image_uris ? card.card_faces[isFlipped ? 1 : 0].image_uris?.normal : (card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal)} 
+              alt={card.name}
+              className="w-full h-full object-cover rounded-[4.75%] shadow-[0_15px_35px_rgba(0,0,0,0.6)] border border-white/5 bg-gray-900/50 transition-opacity duration-300"
+            />
+            {card.card_faces && card.card_faces[1]?.image_uris && (
+              <button
+                onClick={() => setIsFlipped(!isFlipped)}
+                className="absolute -right-5 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 hover:bg-amber-500 text-gray-300 hover:text-black rounded-full shadow-[0_0_15px_rgba(0,0,0,0.9)] flex items-center justify-center text-xl transition-all hover:scale-110 border border-gray-600 hover:border-amber-400 z-20"
+                title="Girar Carta"
+              >
+                <i className="fa-solid fa-rotate"></i>
+              </button>
+            )}
+          </div>
           {card.edhrec_rank && card.legalities?.commander === 'legal' && (
             <div 
               className="absolute -top-3 -right-3 bg-[#1c242a] text-emerald-400 text-sm font-bold px-4 py-1.5 rounded-full border border-emerald-500/50 shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center z-10 group cursor-help"
@@ -964,46 +977,67 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       <div className="p-8 xl:w-[55%] flex flex-col relative bg-[#111318]/90">
         {(() => {
           const displayCard = localizedData || card
-          const cName = displayCard.printed_name || displayCard.name
-          const cType = displayCard.printed_type_line || displayCard.type_line
-          const cText = displayCard.printed_text || displayCard.oracle_text
-          const cFlavor = displayCard.printed_flavor_text || displayCard.flavor_text || card.flavor_text
+          
+          let facesToRender = []
+          if (displayCard.card_faces && displayCard.card_faces.length > 0) {
+            if (displayCard.card_faces[1]?.image_uris) {
+              facesToRender = [displayCard.card_faces[isFlipped ? 1 : 0]]
+            } else {
+              facesToRender = displayCard.card_faces
+            }
+          } else {
+            facesToRender = [displayCard]
+          }
 
           return (
             <>
-              <div className="flex justify-between items-start mb-6 border-b border-gray-700/80 pb-6 relative">
-                {fetchingLocal && (
-                  <div className="absolute -top-4 -right-4 bg-amber-500/20 text-amber-500 text-xs px-3 py-1.5 rounded-bl-xl rounded-tr-3xl border-b border-l border-amber-500/30 flex items-center shadow-lg">
-                    <i className="fa-solid fa-language fa-fade mr-2"></i> Traduciendo...
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-amber-500 mtg-font mb-2 leading-tight">
-                    {cName}
-                  </h2>
-                  <p className="text-base text-gray-400 font-serif italic tracking-wide">{cType}</p>
+              {fetchingLocal && (
+                <div className="absolute top-4 right-4 bg-amber-500/20 text-amber-500 text-xs px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center shadow-lg z-10">
+                  <i className="fa-solid fa-language fa-fade mr-2"></i> Traduciendo...
                 </div>
-                {displayCard.mana_cost && (
-                  <div className="flex items-center gap-1 bg-black/40 px-3 py-1.5 rounded-full border border-gray-700/50">
-                    {formatManaCost(displayCard.mana_cost, symbology)}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-grow mb-8 overflow-y-auto pr-4 custom-scrollbar">
-                {cText && (
-                  <div className="bg-black/40 p-6 rounded-2xl border border-gray-700/50 shadow-inner mb-6 relative group">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50 rounded-l-2xl group-hover:bg-amber-500 transition-colors"></div>
-                    <div className="pl-2">
-                      <div className="text-gray-300 whitespace-pre-line text-base leading-relaxed">{formatOracleText(cText, symbology)}</div>
+              )}
+              <div className="flex-grow mb-8 overflow-y-auto pr-4 custom-scrollbar flex flex-col gap-8">
+                {facesToRender.map((face, idx) => {
+                  const cName = face.printed_name || face.name
+                  const cType = face.printed_type_line || face.type_line
+                  const cText = face.printed_text || face.oracle_text
+                  const cFlavor = face.printed_flavor_text || face.flavor_text || (idx === 0 && displayCard.flavor_text)
+                  const cManaCost = face.mana_cost
+
+                  return (
+                    <div key={idx} className="relative">
+                      <div className="flex justify-between items-start mb-6 border-b border-gray-700/80 pb-6">
+                        <div>
+                          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-amber-500 mtg-font mb-2 leading-tight">
+                            {cName}
+                          </h2>
+                          <p className="text-base text-gray-400 font-serif italic tracking-wide">{cType}</p>
+                        </div>
+                        {cManaCost && (
+                          <div className="flex items-center gap-1 bg-black/40 px-3 py-1.5 rounded-full border border-gray-700/50 shrink-0">
+                            {formatManaCost(cManaCost, symbology)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        {cText && (
+                          <div className="bg-black/40 p-6 rounded-2xl border border-gray-700/50 shadow-inner mb-6 relative group">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50 rounded-l-2xl group-hover:bg-amber-500 transition-colors"></div>
+                            <div className="pl-2">
+                              <div className="text-gray-300 whitespace-pre-line text-base leading-relaxed">{formatOracleText(cText, symbology)}</div>
+                            </div>
+                          </div>
+                        )}
+                        {cFlavor && (
+                          <div className="text-gray-500 italic font-serif text-base leading-relaxed border-l-4 border-gray-700 pl-4 py-1">
+                            {cFlavor}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {cFlavor && (
-                  <div className="text-gray-500 italic font-serif text-base leading-relaxed border-l-4 border-gray-700 pl-4 py-1">
-                    {cFlavor}
-                  </div>
-                )}
+                  )
+                })}
               </div>
             </>
           )
@@ -1049,7 +1083,18 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       </div>
     </div>
 
-    {(prints.length > 0 || edhrecSections.length > 0 || fetchingSimilar) && (
+    {!showExtraInfo && (
+      <div className="p-8 border-t border-gray-700/80 bg-black/30 flex justify-center w-full">
+        <button 
+          onClick={() => setShowExtraInfo(true)}
+          className="bg-amber-600/20 hover:bg-amber-500/30 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-all flex items-center shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+        >
+          <i className="fa-solid fa-layer-group mr-3"></i> {t('loadExtraInfo') || 'Cargar Más Información (EDHREC y Versiones)'}
+        </button>
+      </div>
+    )}
+
+    {showExtraInfo && (prints.length > 0 || edhrecSections.length > 0 || fetchingSimilar) && (
       <div className="border-t border-gray-700/80 p-3 bg-black/40 flex flex-wrap items-center justify-between gap-4 px-8">
         {edhrecModes.length > 1 ? (
           <div className="flex flex-wrap gap-2 items-center">

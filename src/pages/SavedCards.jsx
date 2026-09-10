@@ -89,11 +89,41 @@ export default function SavedCards() {
       if (!matchesType) return false
     }
 
-    // 4. Identidad de Color (Simulando id<= colors)
-    if (filters.colors && filters.colors.length > 0) {
-      const cardColors = c.color_identity || []
-      const isSubset = cardColors.every(col => filters.colors.includes(col.toLowerCase()))
-      if (!isSubset) return false
+    // 4. Identidad de Color (4 estados)
+    if (filters.colors && typeof filters.colors === 'object' && !Array.isArray(filters.colors)) {
+      const cardColors = (c.color_identity || []).map(col => col.toLowerCase())
+      const isColorless = cardColors.length === 0
+      
+      const greenColors = Object.entries(filters.colors).filter(([_, state]) => state === 'green').map(([col]) => col)
+      const redColors = Object.entries(filters.colors).filter(([_, state]) => state === 'red').map(([col]) => col)
+      const yellowColors = Object.entries(filters.colors).filter(([_, state]) => state === 'yellow').map(([col]) => col)
+
+      // Verdes (Debe incluir)
+      for (const gc of greenColors) {
+        if (gc === 'c') {
+          if (!isColorless) return false
+        } else {
+          if (!cardColors.includes(gc)) return false
+        }
+      }
+
+      // Rojos (No debe incluir)
+      for (const rc of redColors) {
+        if (rc === 'c') {
+          if (isColorless) return false
+        } else {
+          if (cardColors.includes(rc)) return false
+        }
+      }
+
+      // Amarillos (Debe incluir al menos uno)
+      if (yellowColors.length > 0) {
+        const hasAnyYellow = yellowColors.some(yc => {
+          if (yc === 'c') return isColorless
+          return cardColors.includes(yc)
+        })
+        if (!hasAnyYellow) return false
+      }
     }
 
     // 5. Formatos

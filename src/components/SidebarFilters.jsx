@@ -20,7 +20,14 @@ export default function SidebarFilters({
   const [scopes, setScopes] = useState({ name: true, type: true, text: true })
   const [imgLang, setImgLang] = useState('en')
   const [isCommander, setIsCommander] = useState(false)
-  const [colors, setColors] = useState([])
+  const [colors, setColors] = useState({
+    w: 'off',
+    u: 'off',
+    b: 'off',
+    r: 'off',
+    g: 'off',
+    c: 'off'
+  })
   const [types, setTypes] = useState([])
   const [rarities, setRarities] = useState([])
   const [formatFilters, setFormatFilters] = useState({}) // { format: 'legal' | 'not_legal' }
@@ -106,7 +113,7 @@ export default function SidebarFilters({
     setScopes({ name: true, type: true, text: true })
     setImgLang('en')
     setIsCommander(false)
-    setColors([])
+    setColors({ w: 'off', u: 'off', b: 'off', r: 'off', g: 'off', c: 'off' })
     setTypes([])
     setRarities([])
     setFormatFilters({})
@@ -279,12 +286,28 @@ export default function SidebarFilters({
           {['W', 'U', 'B', 'R', 'G', 'C'].map(c => {
             const sym = `{${c}}`
             const svg = symbology[sym]
-            const isSelected = colors.includes(c.toLowerCase())
+            const state = colors[c.toLowerCase()]
+            let stateClasses = 'border-gray-700 hover:border-gray-400 opacity-50 grayscale'
+            if (state === 'yellow') stateClasses = 'border-amber-500 bg-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+            if (state === 'green') stateClasses = 'border-emerald-500 bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+            if (state === 'red') stateClasses = 'border-red-500 bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.3)]'
+
             return (
               <button 
                 key={c}
-                onClick={() => toggleArrayItem(setColors, c.toLowerCase())}
-                className={`w-10 h-10 bg-gray-900 border rounded-full flex items-center justify-center transition-all ${isSelected ? 'border-amber-500 bg-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'border-gray-700 hover:border-gray-400'}`}
+                onClick={() => {
+                  setColors(prev => {
+                    const current = prev[c.toLowerCase()]
+                    let next = 'off'
+                    if (current === 'off') next = 'yellow'
+                    else if (current === 'yellow') next = 'green'
+                    else if (current === 'green') next = 'red'
+                    else if (current === 'red') next = 'off'
+                    return { ...prev, [c.toLowerCase()]: next }
+                  })
+                }}
+                className={`w-10 h-10 bg-gray-900 border rounded-full flex items-center justify-center transition-all ${stateClasses}`}
+                title={state === 'off' ? 'No influye' : state === 'yellow' ? 'Puede incluirlo' : state === 'green' ? 'Debe incluirlo' : 'No debe incluirlo'}
               >
                 {svg ? <img src={svg} alt={c} className="w-6 h-6 drop-shadow-lg" /> : <span className="text-gray-400 font-bold">{c}</span>}
               </button>

@@ -852,8 +852,8 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
       )}
 
       <div className="flex flex-col xl:flex-row flex-grow relative">
-        <div className="p-8 xl:w-[45%] flex flex-col items-center bg-gradient-to-b from-black/40 to-black/10 border-r border-b xl:border-b-0 border-gray-800/50 shrink-0">
-        <div className="relative w-full max-w-[340px]">
+        <div className="p-4 py-8 md:p-8 xl:w-[45%] flex flex-col items-center justify-center min-h-[calc(100vh-100px)] xl:min-h-0 bg-gradient-to-b from-black/40 to-black/10 border-r border-b xl:border-b-0 border-gray-800/50 shrink-0">
+        <div className="relative w-full max-w-[85vw] sm:max-w-[340px] md:max-w-[380px]">
           <div className="relative w-full aspect-[63/88]">
             <img 
               src={card.card_faces && card.card_faces[1]?.image_uris ? card.card_faces[isFlipped ? 1 : 0].image_uris?.normal : (card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal)} 

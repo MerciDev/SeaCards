@@ -191,6 +191,7 @@ export default function Home() {
             </>
           ) : (
             <CardDetail 
+              key={card.id}
               baseCard={card} 
               mobileActionNode={
                 <button 

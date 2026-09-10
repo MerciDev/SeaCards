@@ -830,12 +830,6 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   return (
     <div className="glass-panel rounded-3xl overflow-hidden flex flex-col relative shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t border-l border-white/10 min-h-[600px] max-w-full w-full">
       
-      {fetchingLocal && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-md z-20 flex items-center justify-center rounded-3xl transition-all duration-300">
-          <Loader message={t('scrying')} />
-        </div>
-      )}
-
       {zoomedCard && createPortal(
         <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in">
           <img 

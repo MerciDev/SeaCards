@@ -113,7 +113,13 @@ export default function Home() {
     }
   }, [buffer.length, queryStr])
 
+  const clickLockRef = useRef(false)
+
   const fetchRandomCard = async () => {
+    if (clickLockRef.current) return
+    clickLockRef.current = true
+    setTimeout(() => { clickLockRef.current = false }, 400) // Prevent ghost double-clicks on mobile
+
     if (buffer.length > 0) {
       const nextCard = buffer[0]
       setBuffer(prev => prev.slice(1))

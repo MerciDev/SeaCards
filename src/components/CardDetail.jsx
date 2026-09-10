@@ -55,7 +55,6 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
   const [prevBaseCard, setPrevBaseCard] = useState(baseCard)
   const [card, setCard] = useState(baseCard)
   const [localizedData, setLocalizedData] = useState(null)
-  const [fetchingLocal, setFetchingLocal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [likedCardId, setLikedCardId] = useState(null)
@@ -1067,11 +1066,6 @@ export default function CardDetail({ baseCard, mobileActionNode }) {
 
           return (
             <>
-              {fetchingLocal && (
-                <div className="absolute top-4 right-4 bg-amber-500/20 text-amber-500 text-xs px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center shadow-lg z-10">
-                  <i className="fa-solid fa-language fa-fade mr-2"></i> Traduciendo...
-                </div>
-              )}
               <div className="flex-grow mb-8 overflow-y-auto pr-4 custom-scrollbar flex flex-col gap-8">
                 {facesToRender.map((face, idx) => {
                   const cName = face.printed_name || face.name
